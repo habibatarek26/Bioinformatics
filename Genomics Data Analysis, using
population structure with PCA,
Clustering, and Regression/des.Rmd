@@ -1,0 +1,239 @@
+---
+title: "Genomics Data Analysis, using population structure with PCA, Clustering, and Regression"
+author: 'Habiba Tarek Ramadan Ali , ID : 21010445'
+date: "2025-04-14"
+output:
+  pdf_document: default
+---
+This command will generate a \textbf{.raw file} that uses the \textbf{additive model (0, 1, 2)} to represent SNP genotypes.  
+
+
+![](/home/habiba/Pictures/1.png)  
+
+
+\vspace{10in}
+Run PCA on the \textbf{cleaned data} using the \textbf{PLINK} and \textbf{--pca} flag  
+
+
+![](/home/habiba/Pictures/2.png)  
+
+
+
+
+\vspace{20cm}  
+
+
+
+
+
+ \LARGE \textbf{Part 1: Identify SNPs associated with Population Structure}  
+ 
+
+ \Large \textbf{Task 1.1: Identify SNPs associated with genomic PCs using Linear Regression Analysis}  
+ 
+  
+  
+```{r}
+#Read the .raw file
+recoded_data <- read.table("/home/habiba/recoded_data.raw", header = TRUE, sep = "")
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+#Separate the snp data
+snp_data <- recoded_data %>% select(7:ncol(recoded_data))
+snp_names <- colnames(snp_data)
+```
+
+```{r}
+#read eigenvectors and eigenvalues
+eigenvalues <- read.table("/home/habiba/cleaned_data.eigenval")
+eigenvectors<- read.table("/home/habiba/cleaned_data.eigenvec")
+
+#rename the first three PCs
+pc_names <- c("PC1", "PC2", "PC3")
+colnames(eigenvectors)[3:5] <- pc_names
+
+pcs <- eigenvectors %>% select(PC1, PC2, PC3)
+```
+
+```{r}
+
+# Number of SNPs to use (adjust this number as needed)
+set.seed(123)  # For reproducibility
+N <- 15000
+
+# Randomly sample N SNP columns
+snp_sampled_names <- sample(snp_names, N)
+snp_data_subset <- snp_data %>% select(all_of(snp_sampled_names))
+
+# Merge PCs with sampled SNP data
+merged_data <- cbind(snp_data_subset, pcs)
+
+results <- data.frame(PC = character(), SNP = character(), P_Value = numeric(), Beta = numeric(), SE = numeric())
+
+# Loop through each PC and SNP
+for (i in 1:3) {
+  PCi <- pc_names[i]
+  others <- setdiff(pc_names, PCi)
+  PCj <- others[1]
+  PCk <- others[2]
+
+  for (snp in snp_sampled_names) {
+    formula <- as.formula(paste(PCi, "~", paste0("`", snp, "`"), "+", PCj, "+", PCk))
+    model <- lm(formula, data = merged_data)
+    
+    # Extract p-value for the SNP
+    pval <- summary(model)$coefficients[2, 4]
+    
+    # Extract beta coefficient (regression coefficient) for the SNP
+    beta <- summary(model)$coefficients[2, 1]
+    
+    # Extract standard error for the SNP's coefficient
+    se_snp <- summary(model)$coefficients[2, 2]
+    
+    # Store results in the dataframe
+    results <- rbind(results, data.frame(PC = PCi, SNP = snp, P_Value = pval, Beta = beta, SE = se_snp))
+  }
+}
+
+```
+
+\vspace{10cm}
+```{r}
+num_tests <- N * 3  # 3 PCs (PC1, PC2, PC3)
+
+# Bonferroni threshold at alpha = 0.05
+alpha <- 0.05
+bonferroni_threshold <- alpha / num_tests
+
+bonferroni_threshold
+```
+
+
+```{r}
+# Filter results where p-value is less than the Bonferroni threshold
+significant_results <- results %>% filter(P_Value < bonferroni_threshold)
+significant_results <- significant_results %>% arrange(P_Value)
+
+head(significant_results,10)
+```
+\vspace{20cm}
+
+ \Large \textbf{Task 2.2: Identify SNPs that associate with the population subgroups (clusters) using logistic regression}
+```{r}
+library(scatterplot3d)
+library(caret)
+```
+
+
+```{r}
+# Run the k-means clustering algorithm
+k <- 3
+kmeans_result <- kmeans(pcs, centers = k, nstart = 25)
+
+# 3D scatterplot
+scatterplot3d(pcs$PC1, pcs$PC2, pcs$PC3, color = kmeans_result$cluster, pch = 19,
+              main = "3D PCA Clustering (k=3)")
+
+# One-hot encode the cluster labels
+clusters <- data.frame(cluster = as.factor(kmeans_result$cluster))
+dummy <- dummyVars("~ cluster", data = clusters)
+one_hot <- predict(dummy, newdata = clusters)
+colnames(one_hot) <- c("C1", "C2", "C3") 
+one_hot_df <- as.data.frame(one_hot)
+
+# Logistic regression of each cluster vs all SNPs 
+# Run 3 sets of logistic regressions: one for each cluster
+results2 <- data.frame(C = character(), SNP = character(), P_Value = numeric(), stringsAsFactors = FALSE)
+
+for (cluster_index in 1:3) {
+  cluster_label <- paste0("C", cluster_index)
+  y <- one_hot_df[[cluster_label]]
+  for (snp in snp_sampled_names) {
+    data <- data.frame(Y = y, SNP = snp_data_subset[[snp]], pcs)
+
+    model <- glm(Y ~ SNP , data = data, family = "binomial")
+    pval <- summary(model)$coefficients[2, 4]
+
+    results2 <- rbind(results2, data.frame(C = cluster_label, SNP = snp, P_Value = pval))
+  }
+}
+
+
+
+# Filter significant SNPs
+significant_snps <- results2 %>% filter(P_Value < bonferroni_threshold)
+significant_snps <- significant_snps %>% arrange(P_Value)
+
+# top results
+head(significant_snps,10)
+
+```
+
+  
+  ![](/home/habiba/Pictures/3.png)
+
+```{r}
+map <- read.table("/home/habiba/cleaned_data.map", header = FALSE)
+colnames(map) <- c("CHR", "SNP", "CM", "BP")
+results$SNP <- sub("_[A-Z]+$", "", results$SNP)
+results2$SNP <- sub("_[A-Z]+$", "", results2$SNP)
+```
+
+```{r}
+pc1_results <- subset(results, PC == "PC1")
+manhattan_data1 <- merge(pc1_results,map, by = "SNP")
+manhattan_data1 <- manhattan_data1 %>% select(SNP, CHR, BP, P_Value)
+colnames(manhattan_data1) <- c("SNP", "CHR", "BP", "P")
+
+
+pc1_results <- subset(results, PC == "PC2")
+manhattan_data2 <- merge(pc1_results,map, by = "SNP")
+manhattan_data2 <- manhattan_data2 %>% select(SNP, CHR, BP, P_Value)
+colnames(manhattan_data2) <- c("SNP", "CHR", "BP", "P")
+
+
+pc1_results <- subset(results, PC == "PC3")
+manhattan_data3 <- merge(pc1_results,map, by = "SNP")
+manhattan_data3 <- manhattan_data3 %>% select(SNP, CHR, BP, P_Value)
+colnames(manhattan_data3) <- c("SNP", "CHR", "BP", "P")
+
+c1_results <- subset(results2, C == "C1")
+manhattan_data4 <- merge(c1_results, map, by = "SNP")
+manhattan_data4 <- manhattan_data4 %>% select(SNP, CHR, BP, P_Value)
+colnames(manhattan_data4) <- c("SNP", "CHR", "BP", "P")
+
+c2_results <- subset(results2, C == "C2")
+manhattan_data5 <- merge(c2_results, map, by = "SNP")
+manhattan_data5 <- manhattan_data5 %>% select(SNP, CHR, BP, P_Value)
+colnames(manhattan_data5) <- c("SNP", "CHR", "BP", "P")
+
+c3_results <- subset(results2, C == "C3")
+manhattan_data6 <- merge(c3_results, map, by = "SNP")
+manhattan_data6 <- manhattan_data6 %>% select(SNP, CHR, BP, P_Value)
+colnames(manhattan_data6) <- c("SNP", "CHR", "BP", "P")
+
+```
+
+```{r}
+library(qqman)
+manhattan(manhattan_data1, main = "Manhattan Plot - Task 1.1 (Linear Regression PC1)")
+manhattan(manhattan_data2, main = "Manhattan Plot - Task 1.1 (Linear Regression PC2)")
+manhattan(manhattan_data3, main = "Manhattan Plot - Task 1.1 (Linear Regression PC3)")
+manhattan(manhattan_data4, main = "Manhattan Plot - Task 1.2 (Logistic Regression C1)")
+manhattan(manhattan_data5, main = "Manhattan Plot - Task 1.2 (Logistic Regression C2)")
+manhattan(manhattan_data6, main = "Manhattan Plot - Task 1.2 (Logistic Regression C3)")
+
+```   
+
+
+![](/home/habiba/Pictures/4.png)
+
+![](/home/habiba/Pictures/5.png)
+
+
+![](/home/habiba/Pictures/6.png)
+

@@ -1,0 +1,238 @@
+---
+title: "Assignment 4: PLINK, PCA, and Clustering"
+author: 'Habiba Tarek Ramadan Ali "ID: 21010445"'
+date: "2025-03-17"
+output: pdf_document
+header-includes:
+  - \usepackage{longtable}
+  - \usepackage{booktabs}
+geometry: margin=1in
+---
+
+\LARGE \textbf{Part 1: Principal Component Analysis Using PLINK}  
+
+\Large \textbf{QC on Qatari dataset using PLINK}  
+Total number of removed variants is 27324
+
+\begin{longtable}{@{}lll@{}}
+  \toprule
+  \textbf{Test} & \textbf{Threshold} & \textbf{Variants Removed} \\
+  \midrule
+  HWE   & 0.01  & 1076  \\
+  MAF   & 0.1   & 13739 \\
+  GENO  & 0.001 & 12509 \\
+  \bottomrule
+\end{longtable}
+
+![](/home/habiba/Pictures/finalqc.png){width=80% height=80%} 
+
+\vspace{6cm}
+\Large \textbf{PCA}
+
+![](/home/habiba/Pictures/pcaFFF.png){width=80% height=80%} 
+
+```{r}
+# Load PCA Eigenvectors (Remove first two columns)
+qatari_eigenVec <- read.table("/home/habiba/qatari_pca.eigenvec", header=FALSE)
+
+# Keep only columns from 3rd column
+qatari_eigenVec <- qatari_eigenVec[, 3:ncol(qatari_eigenVec)]
+
+# Rename first few PCs (adjust as needed)
+colnames(qatari_eigenVec)[1:3] <- c("PC1", "PC2", "PC3")
+
+# Load PCA Eigenvalues 
+qatari_eigenVal <- read.table("/home/habiba/qatari_pca.eigenval", header=FALSE)
+
+colnames(qatari_eigenVal) <- c("Eigenvalue")
+
+# Print results
+# print(qatari_eigenVec)
+# print(qatari_eigenVal)
+
+```
+\vspace{5cm}
+```{r}
+# Load necessary libraries
+library(ggplot2)
+
+# Create scatter plots for PC1 vs PC2, PC1 vs PC3, and PC2 vs PC3
+ggplot(qatari_eigenVec, aes(x=PC1, y=PC2)) +
+  geom_point(aes()) +  # Color points based on PC3
+  theme_minimal() +
+  labs(title="PCA Plot: PC1 vs PC2", x="Principal Component 1", y="Principal Component 2")
+```
+\vspace{5cm}
+
+```{r}
+ggplot(qatari_eigenVec, aes(x=PC1, y=PC3)) +
+  geom_point(aes()) +
+  theme_minimal() +
+  labs(title="PCA Plot: PC1 vs PC3", x="Principal Component 1", y="Principal Component 3")
+```
+\vspace{10cm}
+
+```{r}
+ggplot(qatari_eigenVec, aes(x=PC2, y=PC3)) +
+  geom_point(aes()) +
+  theme_minimal() +
+  labs(title="PCA Plot: PC2 vs PC3", x="Principal Component 2", y="Principal Component 3")
+```
+\vspace{10cm}
+```{r}
+library(ggplot2)
+
+# Compute explained variance
+total_variance <- sum(qatari_eigenVal$Eigenvalue)
+qatari_eigenVal$ExplainedVariance <- (qatari_eigenVal$Eigenvalue / total_variance) * 100
+
+# Add PC numbers for plotting
+qatari_eigenVal$PC <- seq_len(nrow(qatari_eigenVal))  # Ensure sequence starts from 1
+
+# Scree plot for the first 20 principal components
+ggplot(qatari_eigenVal[1:20, ], aes(x = factor(PC), y = ExplainedVariance)) +
+  geom_line(aes(group = 1), color = "red", size = 1) +  # Add a line for trend
+  geom_point(color = "red", size = 2) +  # Highlight points
+  labs(title = "Scree Plot", x = "Principal Component", y = "Explained Variance (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for clarity
+
+
+```
+\vspace{10cm}
+
+```{r}
+#install.packages("scatterplot3d", INSTALL_opts = c('--no-lock'))
+#install.packages("cluster")
+#install.packages("ggplot2")
+
+library(cluster)   # For Dunn's index
+library(ggplot2)         # 2D visualization
+library(scatterplot3d)   # 3D visualization
+```
+
+```{r}
+# 3D scatter plot
+scatterplot3d(qatari_eigenVec[, 1], qatari_eigenVec[, 2], qatari_eigenVec[, 3],
+              xlab = "PC1",
+              ylab = "PC2",
+              zlab = "PC3",
+              main = "3D Scatter Plot of First Three Principal Components",
+              pch = 16,  # Solid circles
+              color = "blue")
+```  
+
+\vspace{20cm}
+\LARGE \textbf{Part 2: Clustering in R}  
+
+\Large \textbf{Task 2.1: Perform Clustering}
+
+
+```{r}
+# Load necessary libraries
+library(fpc)             # Cluster evaluation metrics
+library(gridExtra)       # Arrange multiple plots
+library(grid)            # Work with graphical objects
+
+reducedVectors <- qatari_eigenVec[, 1:3]
+
+```
+
+```{r}
+# Function to compute Dunn's Index
+# The ratio between the min inter-cluster distance to the max intra cluster distance
+# The higher the Dunn index the better the clustering
+compute_dunn_index <- function(data, clusters) {
+  dist_matrix <- dist(data)
+  dunn_index <- cluster.stats(dist_matrix, clusters)$dunn
+  return(dunn_index)
+  #return(dunn(dist(data), kmeans_result$clusters)) msh sh3'ala
+}
+
+plot_2d_clusters <- function(data, clusters, k) {
+  data$Cluster <- as.factor(clusters)  # Convert cluster labels to factor
+
+  plot_pc1_pc2 <- ggplot(data, aes(x = PC1, y = PC2, color = Cluster)) +
+    geom_point(size = 2) +
+    labs(title = paste("K =", k, "- PC1 vs PC2"), x = "PC1", y = "PC2") +
+    theme_minimal()
+
+  plot_pc1_pc3 <- ggplot(data, aes(x = PC1, y = PC3, color = Cluster)) +
+    geom_point(size = 2) +
+    labs(title = paste("K =", k, "- PC1 vs PC3"), x = "PC1", y = "PC3") +
+    theme_minimal()
+
+  plot_pc2_pc3 <- ggplot(data, aes(x = PC2, y = PC3, color = Cluster)) +
+    geom_point(size = 2) +
+    labs(title = paste("K =", k, "- PC2 vs PC3"), x = "PC2", y = "PC3") +
+    theme_minimal()
+
+  # Arrange the three plots side by side
+    return(grid.arrange(plot_pc1_pc2, plot_pc1_pc3, plot_pc2_pc3, ncol = 2, nrow = 2))
+  }
+
+
+```
+
+```{r}
+# Define cluster sizes
+cluster_sizes <- c(2, 4, 6, 8, 10)
+
+# Initialize storage for results
+kmeans_results <- list()
+dunn_values <- data.frame(Clusters = integer(), Dunn = numeric())
+plots_3d <- list()
+plots_2d <- list()
+
+# Run clustering and generate plots
+for (k in cluster_sizes) {
+  set.seed(123) #ensures reproducibility 
+  
+  # Perform K-means clustering
+  kmeans_result <- kmeans(reducedVectors, centers = k, nstart = 25) #run k-means algorithm
+  kmeans_results[[as.character(k)]] <- kmeans_result #store the results to plot them 
+  clusters <- kmeans_result$cluster # assignment of each point
+  
+  # Compute Dunn's Index
+  dunn_index <- compute_dunn_index(reducedVectors, clusters)
+  dunn_values[k/2, ] <- c(k, dunn_index)
+}
+```
+
+```{r}
+# Function to generate a 3D scatter plot 
+for (k in cluster_sizes) {
+  clusters <- kmeans_results[[as.character(k)]]$cluster
+  cluster_colors <- rainbow(length(unique(clusters)))[clusters]
+
+  scatterplot3d(reducedVectors$PC1, reducedVectors$PC2, reducedVectors$PC3,
+                color = cluster_colors, pch = 19,
+                main = paste("3D Scatter Plot (K=", k, ")"),
+                xlab = "PC1", ylab = "PC2", zlab = "PC3")
+
+}
+```
+\vspace{10cm}
+```{r}
+ggplot(dunn_values, aes(x = Clusters, y = Dunn)) +
+  geom_line(color = "darkred", size = 1) +
+  geom_point(size = 3, color = "darkred") +
+  labs(title = "Dunn's Index vs. Number of Clusters",
+       x = "Number of Clusters",
+       y = "Dunn's Index") +
+  theme_minimal()
+```
+\vspace{10cm}
+
+\Large \textbf{Task 2.2: Visualize Clusters}
+
+```{r}
+# Display 2D plots for each cluster size
+for (k in cluster_sizes) {
+  plots_2d[[as.character(k)]] <- plot_2d_clusters(qatari_eigenVec,kmeans_results[[as.character(k)]]$cluster, k)
+}
+```
+
+
+
+

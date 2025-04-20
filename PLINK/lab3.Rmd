@@ -1,0 +1,342 @@
+---
+title: "Assignment 3: Plink"
+author: "Habiba Tarek Ramadan Ali (ID: 21010445)"
+date: "2025-03-09"
+output: pdf_document
+header-includes:
+  - \usepackage{longtable}
+  - \usepackage{booktabs}
+geometry: margin=1in
+---
+
+\LARGE \textbf {Part 1: Plink Walkthrough}
+
+\Large \textbf {Task 1.1: Installation}  
+
+![](/home/habiba/Pictures/installation.png)  
+\Large \textbf {Task 1.2: Basic Commands}  
+
+\large \textbf {Formats of files:} binary files (.bed , .bim and .fam) 
+
+![](/home/habiba/Pictures/filesFormats.png)  
+   
+   
+\large \textbf Number of Variants: 67735.  
+
+\large \textbf Number of Samples: 156.  
+
+![](/home/habiba/Pictures/firstcmd.png)  
+
+\Large \textbf  {PLINK `.map` File Structure}  
+
+Each row in a `.map` file represents a SNP and consists of four columns:
+
+\begin{longtable}{@{}ll@{}}
+    \toprule
+    \textbf{Column} & \textbf{Description} \\ \midrule
+    1 & \textbf{Chromosome Number} – The chromosome on which the SNP is located  \\ 
+    2 & \textbf{SNP ID} – Unique identifier for the SNP. \\ 
+    3 & \textbf{Genetic Distance} – Position in centimorgans (cM). \\ 
+    4 & \textbf{Base-pair Position} – Physical position on the chromosome. \\ 
+    \bottomrule
+\end{longtable}
+
+
+![](/home/habiba/Pictures/mapHead.png)  
+\vspace{0.5cm}  
+
+\Large \textbf  {PLINK `.ped` File Structure}  
+
+
+\begin{longtable}{@{}ll@{}}
+    \toprule
+    \textbf{Column} & \textbf{Description} \\ 
+    1 & \textbf{FID} – Family ID.  \\ 
+    2 & \textbf{IID} – Individual ID. \\ 
+    3 & \textbf{F} – Father ID. \\ 
+    4 & \textbf{M} – Mother ID. \\ 
+    5 & \textbf{SEX} – Sex. \\ 
+    6 & \textbf{PHENOTYPE} – 1 , 2 or -9 for unknown. \\ 
+    7+ & \textbf{SNPs} – SNP genotype data (two columns per SNP). \\ 
+    \bottomrule
+\end{longtable}
+
+![](/home/habiba/Pictures/pedHead.png)  
+\vspace{2cm}  
+
+\Large \textbf Run \textbf{"Missing out"} command to find missing Rate per individual \textbf{"imiss file"} and per snp \textbf{"lmiss file"} 
+
+\begin{longtable}{@{}ll@{}}
+    \toprule
+    \textbf{Statistic} & \textbf{Value} \\ 
+    \midrule
+    Total Variants & 67,735 \\ 
+    Total Individuals & 156 \\ 
+    Males & 49 \\ 
+    Females & 107 \\ 
+    Total Genotyping Rate & 0.998816 \(\left( \frac{156 \times 67735 - 1388}{156 \times 67735} \right)\) \\ 
+    Sample Missing Data Report & \texttt{qatari.imiss} \\ 
+    Variant-Based Missing Data Report & \texttt{qatari.lmiss} \\ 
+    \bottomrule
+\end{longtable}
+
+
+![](/home/habiba/Pictures/missingOut.png)  
+\vspace{4cm}  
+
+\Large \textbf{PLINK `.imiss` File Structure} 
+
+\begin{longtable}{@{}ll@{}}
+    \toprule
+    \textbf{Column} & \textbf{Description} \\ 
+    \midrule
+    1 & \textbf{FID} – Family ID.  \\ 
+    2 & \textbf{IID} – Individual ID. \\ 
+    3 & \textbf{MISS\_PHENO} – Y == Missing Phenotype. \\ 
+    4 & \textbf{N\_MISS} – Number of missing genotype calls. \\ 
+    5 & \textbf{N\_GENO} – Total number of genotype calls. \\ 
+    6 & \textbf{F\_MISS} – Fraction of missing genotypes (\( \frac{N\_MISS}{N\_GENO} \)). \\ 
+    \bottomrule
+\end{longtable}  
+
+![](/home/habiba/Pictures/imiss.png)  
+
+\vspace{10pt}
+
+\Large \textbf{PLINK `.lmiss` File Structure}
+
+\begin{longtable}{@{}ll@{}}
+    \toprule
+    \textbf{Column} & \textbf{Description} \\ 
+    \midrule
+    1 & \textbf{CHR} – Chromosome number. \\ 
+    2 & \textbf{SNP} – SNP ID. \\ 
+    3 & \textbf{N\_MISS} – Number of missing genotype calls. \\ 
+    4 & \textbf{N\_GENO} – Total number of genotype calls. \\ 
+    5 & \textbf{F\_MISS} – Fraction of missing genotypes (\( \frac{N\_MISS}{N\_GENO} \)). \\ 
+    \bottomrule
+\end{longtable}  
+
+![](/home/habiba/Pictures/lmiss.png)  
+\phantomsection
+\label{page5}
+\Large \textbf{Conduct the Missing Call Rate Analysis} 5 different thresholds
+Working with binary dataset files  (.bed, .bim , .fam)
+Working on SNPs missing rates
+Using "plink --bfile dataset --geno threshold --make.bed --out outputFile" command  
+
+\begin{longtable}{@{}ll@{}}
+    \toprule
+    \textbf{part} & \textbf{description} \\ 
+    \midrule
+    --bfile & to use a dataset in binary format \\ 
+    --geno & filters SNPs based on missing genotype rates \\ 
+    --make-bed & This outputs the filtered data in binary PLINK format".bed , .bim and .fam"\\ 
+    --out & prefix for the output files \\ 
+    \bottomrule
+\end{longtable}
+
+![](/home/habiba/Pictures/thre0001.png)   
+
+
+![](/home/habiba/Pictures/thre001.png)  
+![](/home/habiba/Pictures/thre007.png)  
+
+![](/home/habiba/Pictures/thre01.png)  
+![](/home/habiba/Pictures/thre05.png)  
+\begin{longtable}{@{}ll@{}}
+    \toprule
+    \textbf{Parameter} & \textbf{Description} \\ 
+    \midrule
+    \textbf{Threshold} & 0.0001 - 001 \\ 
+    \textbf{Total SNPs Before Filtering} & 67735 \\ 
+    \textbf{Filtered SNPs} & 12509 \\ 
+    \textbf{Remaining SNPs} & 55226 \\ 
+    \bottomrule
+\end{longtable}
+
+\begin{longtable}{@{}ll@{}}
+    \toprule
+    \textbf{Parameter} & \textbf{Description} \\ 
+    \midrule
+    \textbf{Threshold} & 0.007 - 0.01 - 0.05 - +\\ 
+    \textbf{Total SNPs Before Filtering} & 67735 \\ 
+    \textbf{Filtered SNPs} & 0 \\ 
+    \textbf{Remaining SNPs} & 67735 \\ 
+    \bottomrule
+\end{longtable}
+
+\vspace{6cm}
+Working on samples missing rates
+Using "plink --bfile dataset --mind threshold --make.bed --out outputFile" command  
+
+\begin{longtable}{@{}ll@{}}
+    \toprule
+    \textbf{part} & \textbf{description} \\ 
+    \midrule
+    --bfile & to use a dataset in binary format \\ 
+    --mind & filters Samples based on missing genotype rates \\ 
+    --make-bed & This outputs the filtered data in binary PLINK format".bed , .bim and .fam"\\ 
+    --out & prefix for the output files \\ 
+    \bottomrule
+\end{longtable}
+
+![](/home/habiba/Pictures/mind.png) 
+\begin{longtable}{@{}ll@{}}
+    \toprule
+    \textbf{Parameter} & \textbf{Description} \\ 
+    \midrule
+    \textbf{Threshold} &  0.05  \\ 
+    \textbf{Total samples Before Filtering} & 156 \\ 
+    \textbf{Filtered samples} & 0 \\ 
+    \textbf{Remaining samples} & 156 \\ 
+    \bottomrule
+\end{longtable}
+
+![](/home/habiba/Pictures/mind2.png) 
+
+\begin{longtable}{@{}ll@{}}
+    \toprule
+    \textbf{Parameter} & \textbf{Description} \\ 
+    \midrule
+    \textbf{Threshold} &  0.005  \\ 
+    \textbf{Total samples Before Filtering} & 156 \\ 
+    \textbf{Filtered samples} & 6 \\ 
+    \textbf{Remaining samples} & 150 \\ 
+    \bottomrule
+\end{longtable}
+
+\Large \textbf{How the data Quality control affected the dataset:} 
+
+1- Reduced Number of SNPs:  
+   Reduces noise by excluding unreliable or uninformative SNPs.  
+     
+2- Reduced Number of Individuals: 
+   Improves sample-level quality, ensuring only high-fidelity samples remain. 
+
+3- Improved Genotyping Rate: 
+   Higher genotyping rate reflects cleaner, more complete data.
+
+\vspace{6cm}
+\LARGE \textbf{Part 2: Quality Control using PLINK} 
+
+![](/home/habiba/Pictures/freq.png)  
+
+\Large \textbf{Minor Allele Frequency}  
+
+![](/home/habiba/Pictures/freqHead.png) 
+\begin{longtable}{@{}ll@{}}
+    \toprule
+    \textbf{Column} & \textbf{Description} \\ 
+    \textbf{ID} & SNP identifier\\ 
+    \textbf{REF} & Reference allele (major allele) \\ 
+    \textbf{ALT} & Alternative allele (minor allele) \\ 
+    \textbf{ALT\_FREQS} & Frequency of the minor allele \\ 
+    \textbf{OBS\_CT} & Number of observed alleles  \\ 
+    \bottomrule
+\end{longtable}
+\vspace{4cm}
+\Large \textbf{QC using different tests with different threshold:}  
+
+\textbf{1. MAF:}
+removes variants with a minor allele frequency below the specified threshold 
+\section*{Variants Removed vs. MAF Threshold}
+\begin{longtable}{@{}ll@{}}
+  \toprule
+\textbf{MAF Threshold on Missing rate} & \textbf{Variants Removed} \\
+\midrule
+  0.05-                  & 0                      \\
+  0.06                   & 4067                      \\
+  0.1                 & 16606                       \\
+\bottomrule
+\end{longtable}
+- Thresholds \(\leq 0.05\)  will not remove any variants since the data is already filtered.
+- Thresholds \(> 0.5\) are invalid because they do not represent a minor allele.
+
+![](/home/habiba/Pictures/maf05.png)  
+![](/home/habiba/Pictures/mafLog05.png) 
+
+
+
+![](/home/habiba/Pictures/maf06.png)  
+![](/home/habiba/Pictures/mafLog06.png)  
+
+![](/home/habiba/Pictures/maf1.png)
+![](/home/habiba/Pictures/mafLog1.png)
+
+\vspace{1cm}
+\textbf{2. HWE:}  
+remove SNPs with significant deviations from HWE to prevent false positives caused by technical errors.
+
+\section*{Variants Removed vs. HWE Threshold}
+\begin{longtable}{@{}ll@{}}
+  \toprule
+\textbf{HWE Threshold on P-value} & \textbf{Variants Removed} \\
+\midrule
+  0.001                  & 0                      \\
+  0.0011                   & 32                      \\
+  0.0009                 & 0                       \\
+\bottomrule
+\end{longtable}
+- Thresholds \(\leq 0.001\) will not remove any variants because the data has already been filtered using a threshold of approximately 0.01.  
+- Thresholds \(> 0.001\) remove SNPs with significant deviations from HWE to prevent false positives caused by technical errors.
+
+![](/home/habiba/Pictures//hwe0009.png)  
+![](/home/habiba/Pictures//hwe0009Log.png)  
+
+
+
+![](/home/habiba/Pictures/hwe001.png) 
+![](/home/habiba/Pictures/hwe001Log.png)  
+
+![](/home/habiba/Pictures/hwe0011.png)
+![](/home/habiba/Pictures/hwe0011Log.png) 
+
+\vspace{3cm}
+\textbf{3. GENO:}
+\hyperref[page5]{Go to Page 5}  
+
+\LARGE \textbf{The final version of your QC}  
+
+Total number of removed variants is 27324
+
+\begin{longtable}{@{}lll@{}}
+  \toprule
+  \textbf{Test} & \textbf{Threshold} & \textbf{Variants Removed} \\
+  \midrule
+  HWE   & 0.01  & 1076  \\
+  MAF   & 0.1   & 13739 \\
+  GENO  & 0.001 & 12509 \\
+  \bottomrule
+\end{longtable}
+
+![](/home/habiba/Pictures/finalqc.png)  
+
+\vspace{6cm}
+\Large \textbf{Recoding the dataset:}  
+
+![](/home/habiba/Pictures/recodedQatari.png)  
+
+```{r}
+
+ped_dataBef <- read.table("qatari.ped", header = FALSE, stringsAsFactors = FALSE)
+
+cat("Number of Rows (Samples):", nrow(ped_dataBef), "\n")
+cat("Number of Columns (Genotypes + Metadata):", ncol(ped_dataBef), "\n")
+
+```
+
+
+```{r}
+ped_data <- read.table("recoded_prunedQatari.ped", header = FALSE, stringsAsFactors = FALSE)
+
+cat("Number of Rows (Samples):", nrow(ped_data), "\n")
+cat("Number of Columns (Genotypes + Metadata):", ncol(ped_data), "\n")
+
+```
+
+The change in data:  
+
+- The Same number of samples  
+
+- The SNPs "variants" reduced from (\( \frac{135476-6}{2} \) = 67735) to (\( \frac{80828-6}{2} \) = 40411)
